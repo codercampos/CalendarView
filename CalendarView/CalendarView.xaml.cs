@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
+using System.ComponentModel;
 using System.Linq;
+using CalendarView.Controls;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 
@@ -14,6 +16,26 @@ namespace CalendarView
         
         public static readonly BindableProperty MonthProperty = 
             BindableProperty.Create(nameof(Month), typeof(int), typeof(CalendarView), default(int), BindingMode.Default);
+
+        public static readonly BindableProperty SelectedDateProperty = 
+            BindableProperty.Create(nameof(SelectedDate), typeof(DateTime?), typeof(CalendarView), null, BindingMode.Default);
+        
+         
+        public DateTime? SelectedDate
+        {
+            get => (DateTime?)GetValue(SelectedDateProperty);
+            set => SetValue(SelectedDateProperty, value);
+        }
+
+        public Color PrimaryColor { get; set; } = Color.DimGray;
+
+        public Color SelectedColor { get; set; } = Color.DimGray.AddLuminosity(-0.2);
+
+        public Color OutofDateCalendarColor { get; set; } = Color.LightGray;
+
+        public Color DateTextColor { get; set; } = Color.White;
+
+        public Color DayColor { get; set; } = Color.Black;
 
         public IEnumerable ItemsSource
         {
@@ -35,8 +57,9 @@ namespace CalendarView
 
         private void Init()
         {
-            var baseDate = DateTime.Now;
-            var currentDate = DateTime.Now.AddDays(-DateTime.Now.Day + 1);
+            var date = DateTime.Now;
+            var baseDate = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0);
+            var currentDate = baseDate.AddDays(-DateTime.Now.Day + 1);
             var firstDate = currentDate;
             var daysInMonth = DateTime.DaysInMonth(baseDate.Year, baseDate.Month);
             var endDate = currentDate.AddDays(daysInMonth - 1);
@@ -67,7 +90,7 @@ namespace CalendarView
                 HorizontalOptions = LayoutOptions.FillAndExpand,
                 VerticalOptions = LayoutOptions.FillAndExpand,
                 BackgroundColor = Color.Transparent,
-                TextColor = Color.Black,
+                TextColor = DayColor,
                 FontSize = Device.GetNamedSize(NamedSize.Medium, typeof(Label)),
                 HorizontalTextAlignment = TextAlignment.Center,
                 VerticalTextAlignment = TextAlignment.Center,
@@ -78,17 +101,40 @@ namespace CalendarView
 
         private Label GenerateDateLabel(DateTime date, bool isCurrentMonth)
         {
-            var view = new Label
+            var view = new DateLabel
             {
                 HorizontalOptions = LayoutOptions.FillAndExpand,
                 VerticalOptions = LayoutOptions.FillAndExpand,
-                BackgroundColor = isCurrentMonth ? Color.DimGray : Color.LightGray,
-                TextColor = Color.White,
+                BackgroundColor = isCurrentMonth ? PrimaryColor : OutofDateCalendarColor,
+                IsOnCurrentMonth = isCurrentMonth,
+                TextColor = DateTextColor,
                 HorizontalTextAlignment = TextAlignment.Center,
                 VerticalTextAlignment = TextAlignment.Center,
-                Text = date.Day.ToString()
+                Text = date.Day.ToString(),
+                BindingContext = date
             };
+            var tapGestureRecognizer = new TapGestureRecognizer();
+            tapGestureRecognizer.Command = new Command(param =>
+            {
+                // Set all the cells as developer
+                var selectedLabel = param as Label;
+                SetDefaultBackground();
+                selectedLabel.BackgroundColor = SelectedColor;
+                SelectedDate = selectedLabel.BindingContext as DateTime?;
+            });
+            tapGestureRecognizer.CommandParameter = view;
+            view.GestureRecognizers.Add(tapGestureRecognizer);
             return view;
+        }
+
+        private void SetDefaultBackground()
+        {
+            foreach (var child in calendarContainer.Children)
+            {
+                if (!(child is DateLabel label)) continue;
+                if (!label.IsOnCurrentMonth) continue;
+                label.BackgroundColor = PrimaryColor;
+            }
         }
 
         private int GetStartDate(DateTime date)

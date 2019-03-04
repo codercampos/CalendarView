@@ -3,6 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="CalendarView.App">
     <Application.Resources>
-
+        <Style x:Key="BaseLabelStyle" TargetType="Label">
+            <Setter Property="BackgroundColor" Value="DarkGray" />
+        </Style>
+        <Style x:Key="SelectedLabelStyle" TargetType="Label">
+            <Setter Property="BackgroundColor" Value="DimGray" />
+        </Style>
+        <Style x:Key="OutOfDateStyle" TargetType="Label">
+            <Setter Property="BackgroundColor" Value="LightGray" />
+        </Style>
     </Application.Resources>
 </Application>
